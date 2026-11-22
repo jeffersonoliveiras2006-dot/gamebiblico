@@ -27,6 +27,7 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--c
 .mu{color:var(--mu);font-size:13px}.row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c2)}
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode{background:var(--c2);border-radius:12px;padding:10px;text-align:center;cursor:pointer;border:2px solid transparent}.mode.on{border-color:var(--gd)}
 .q{font-size:20px;font-weight:600;margin:8px 0}.hint{background:var(--c2);border-radius:10px;padding:8px 12px;margin:6px 0}
+.sl{font-size:130px;text-shadow:0 0 24px #e8b84a88}.tick{animation:tk .15s}.land{animation:pop .7s}@keyframes tk{from{transform:translateY(-14px);opacity:.4}to{transform:none;opacity:1}}@keyframes pop{0%{transform:scale(.3);opacity:.3}60%{transform:scale(1.35)}100%{transform:scale(1)}}
 .big{font:800 80px system-ui;color:var(--gd);text-align:center}.g{color:var(--ok)}.r{color:var(--no)}
 </style>
 </head>
@@ -36,6 +37,7 @@ input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--c
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="perguntas.js"></script>
+<script src="perguntas2.js"></script>
 <script>
 /* ===== BANCO DE CONTEÚDO (Tradução do Novo Mundo / jw.org) ===== */
 const MC=[
@@ -117,11 +119,11 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const shuf=a=>{a=[...a];for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 const dev=localStorage.jwdev||(localStorage.jwdev=Math.random().toString(36).slice(2,9));
 /* mescla o banco extra e define o nível (1 fácil a 4 difícil) de cada item */
-(()=>{const E=window.EXTRA||{},L=t=>(t||"").trim().split("\n").map(l=>l.split("|"));
+(()=>{const hs=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0},sshuf=(a,x)=>{a=[...a];const r=()=>(x=Math.imul(x,1664525)+1013904223>>>0)/4294967296;for(let i=a.length;i>1;){const j=r()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};const E=window.EXTRA||{},E2=window.EXTRA2||{},L=t=>(t||"").trim().split("\n").map(l=>l.split("|"));
 MC.forEach((x,i)=>x[4]=i<20?1:2);TF.forEach((x,i)=>x[4]=i<8?1:2);WHO.forEach((x,i)=>x[4]=i<4?1:2);
-L(E.mc).forEach(a=>{if(a.length<7)return;const o=shuf([a[2],a[3],a[4],a[5]]);MC.push([a[1],o,o.indexOf(a[2]),a[6],+a[0]])});
-L(E.tf).forEach(a=>{if(a.length<4)return;TF.push([a[1],a[2]=="V"?1:0,a[3],0,+a[0]])});
-L(E.who).forEach(a=>{if(a.length<10)return;const o=shuf([a[5],a[6],a[7],a[8]]);WHO.push([[a[1],a[2],a[3],a[4]],o,o.indexOf(a[5]),a[9],+a[0]])})})();
+L(E.mc).concat(L(E2.mc)).forEach(a=>{if(a.length<7)return;const o=sshuf([a[2],a[3],a[4],a[5]],hs(a[1]));MC.push([a[1],o,o.indexOf(a[2]),a[6],+a[0]])});
+L(E.tf).concat(L(E2.tf)).forEach(a=>{if(a.length<4)return;TF.push([a[1],a[2]=="V"?1:0,a[3],0,+a[0]])});
+L(E.who).concat(L(E2.who)).forEach(a=>{if(a.length<10)return;const o=sshuf([a[5],a[6],a[7],a[8]],hs(a[1]+a[2]));WHO.push([[a[1],a[2],a[3],a[4]],o,o.indexOf(a[5]),a[9],+a[0]])})})();
 /* escolhe n itens crescendo em dificuldade: um sorteado de cada faixa do banco ordenado por nível */
 function pick(B,n){n=Math.min(n,B.length);const s=shuf(B.map((_,i)=>i)).sort((a,b)=>B[a][4]-B[b][4]),q=[];
  for(let k=0;k<n;k++){const a=Math.floor(k*s.length/n),b=Math.max(a+1,Math.floor((k+1)*s.length/n));q.push(s[a+(Math.random()*(b-a)|0)])}return q}
@@ -150,7 +152,7 @@ function addP(){const n=($("#pn").value||"").trim().slice(0,20);if(!n)return;
  const id="p"+Date.now().toString(36)+(Math.random()*99|0);patch({["players/"+id]:{n,s:0,d:dev,o:Date.now()}});$("#pn").value="";$("#pn").focus()}
 const rmP=id=>patch({["players/"+id]:null});
 const setM=m=>patch({mode:m}),setN=n=>patch({n});
-function start(){const m=R.mode,n=+R.n||10;let q;
+function start(){const m=!ref&&R.mode==="stop"?"quiz":R.mode,n=+R.n||10;let q;
  if(m==="stop")q=shuf([...LET]).slice(0,Math.min(n,18));
  else q=pick({quiz:MC,tf:TF,who:WHO}[m],n);
  const o={phase:"q",i:0,g:Date.now(),qs:q.join(","),ans:null,res:null,stp:null};players().forEach(p=>o["players/"+p.id+"/s"]=0);ui={};patch(o)}
@@ -163,15 +165,22 @@ const more=()=>{ui.h++;render()};
 const ready=()=>{ui.ready=1;ui.t0=Date.now();render()};
 function vals(){return [...Array(6)].map((_,k)=>(($("#c"+k)||{}).value||"").replace(/\|/g,""))}
 function submitStop(){const p=pend()[0],i=R.i,o={};o[`ans/${i}/${p.id}`]={v:vals().join("|")};if(mine().length<2&&!(R.stp&&R.stp[i]))o["stp/"+i]=p.id;patch(o)}
-function reveal(){const i=+R.i,c=corr(QID()),A=AN(),o={phase:"rev"};
- players().forEach(p=>{const a=A[p.id];let pt=0;if(a&&a.c===c)pt=R.mode==="who"?[100,70,40,20][Math.min(a.h||0,3)]:100+Math.max(0,Math.round(50*(1-a.ms/20000)));o[`res/${i}/${p.id}`]=pt;o["players/"+p.id+"/s"]=(p.s||0)+pt});patch(o)}
+const reveal=()=>patch({phase:"rev"});
+const LT=()=>(R.qs||"").split(",")[R.i];
+function ptsQ(i,pid){const a=R.ans&&R.ans[i]&&R.ans[i][pid];if(!a||a.c!==corr(+R.qs.split(",")[i]))return 0;
+ return R.mode==="who"?[100,70,40,20][Math.min(a.h||0,3)]:100+Math.max(0,Math.round(50*(1-(a.ms>=0?a.ms:20000)/20000)))}
+function scores(){const o={},ps=players(),l=R.phase==="q"?+R.i-1:R.phase==="lobby"?-1:+R.i;ps.forEach(p=>o[p.id]=0);
+ for(let i=0;i<=l;i++){const S=R.mode==="stop"?scoreStop(i):null;ps.forEach(p=>o[p.id]+=S?S[p.id].reduce((a,b)=>a+b,0):ptsQ(i,p.id))}return o}
+function spin(L){ui.spin=1;ui.sl="?";let n=0,d=50;const N=24;
+ const step=()=>{n++;const last=n>=N;ui.sl=last?L:LET[Math.random()*LET.length|0];const e=$("#sl");
+  if(e){e.textContent=ui.sl;e.classList.remove("tick","land");void e.offsetWidth;e.classList.add(last?"land":"tick")}
+  if(last)setTimeout(()=>{ui.spin=0;render()},1300);else{d+=n*5;setTimeout(step,d)}};step()}
 const gv=(a,k)=>a&&a.v?(a.v.split("|")[k]||""):"";
 function scoreStop(i){const L=norm(R.qs.split(",")[i]),A=(R.ans&&R.ans[i])||{},ps=players(),cnt=CATS.map(()=>({}));
  const ok=(v,k)=>{v=norm(v);return v.length>1&&v[0]===L&&(k||BK.has(v))};
  ps.forEach(p=>CATS.forEach((_,k)=>{const v=gv(A[p.id],k);if(ok(v,k)){const n=norm(v);cnt[k][n]=(cnt[k][n]||0)+1}}));
  const out={};ps.forEach(p=>out[p.id]=CATS.map((_,k)=>{const v=gv(A[p.id],k);return ok(v,k)?(cnt[k][norm(v)]>1?5:10):0}));return out}
-function revealStop(){const i=+R.i,sc=scoreStop(i),o={phase:"rev"};
- players().forEach(p=>{const t=sc[p.id].reduce((a,b)=>a+b,0);o[`res/${i}/${p.id}`]=t;o["players/"+p.id+"/s"]=(p.s||0)+t});patch(o)}
+const revealStop=()=>patch({phase:"rev"});
 const revealNow=()=>R.mode==="stop"?revealStop():reveal();
 function next(){const n=(R.qs||"").split(",").length;R.i+1>=n?patch({phase:"end"}):patch({i:R.i+1,phase:"q"})}
 const again=()=>{ui={};patch({phase:"lobby",ans:null,res:null,stp:null})};
@@ -188,7 +197,7 @@ function home(){return `<h1>Jogo Bíblico</h1><p class="mu" style="text-align:ce
 <input id="jc" placeholder="Código da sala" maxlength="4" style="text-transform:uppercase;text-align:center"><button class="btn s" onclick="joinRoom()" ${db?"":"disabled"}>Entrar na sala</button>
 ${db?"":'<p class="mu">Firebase indisponível: só o modo neste celular funciona.</p>'}</div>
 ${inst?'<button class="btn s" onclick="installApp()">📲 Instalar aplicativo</button>':""}`}
-function rank(){const ps=players().sort((a,b)=>(b.s||0)-(a.s||0));return ps.map((p,k)=>`<div class="row"><span>${["🥇","🥈","🥉"][k]||k+1+"."} ${esc(p.n)}</span><b>${p.s||0}</b></div>`).join("")}
+function rank(){const sc=scores(),ps=players().map(p=>({...p,s:sc[p.id]||0})).sort((a,b)=>b.s-a.s);return ps.map((p,k)=>`<div class="row"><span>${["🥇","🥈","🥉"][k]||k+1+"."} ${esc(p.n)}</span><b>${p.s||0}</b></div>`).join("")}
 function room(){const hd=`<div class="top"><span>${ref?"Sala "+localStorage.jwcode:"Neste celular"}</span><button class="btn s sm" onclick="goBack()">← Voltar</button></div>`;
  if(!R.phase)return hd+'<p class="mu">Conectando…</p>';
  return hd+({lobby,q:qv,rev,end})[R.phase]()}
@@ -196,11 +205,13 @@ function lobby(){const ps=players(),m=R.mode;
  return `${ref?`<div class="card"><div class="mu" style="text-align:center">Código da sala (outros celulares: Entrar na sala)</div><div class="code">${localStorage.jwcode}</div></div>`:""}
 <div class="card"><h2>Jogadores (${ps.length}/25)</h2>${ps.map(p=>`<div class="row"><span>${esc(p.n)}${p.d===dev?" 📱":""}</span>${p.d===dev?`<a onclick="rmP('${p.id}')" style="color:var(--no)">remover</a>`:""}</div>`).join("")||'<p class="mu">Ninguém ainda.</p>'}
 <input id="pn" placeholder="Nome do jogador" maxlength="20" onkeydown="if(event.key=='Enter')addP()"><button class="btn s" onclick="addP()">+ Adicionar jogador neste celular</button></div>
-<div class="card"><h2>Modo de jogo</h2><div class="modes">${Object.entries(MODES).map(([k,v])=>`<div class="mode ${m===k?"on":""}" ${host?`onclick="setM('${k}')"`:""}><div style="font-size:28px">${v[0]}</div>${v[1]}</div>`).join("")}</div>
-${host?`<p class="mu">${m==="stop"?"Rodadas":"Perguntas"}:</p>${[10,20,30,50].map(n=>`<button class="btn sm ${+R.n===n?"":"s"}" onclick="setN(${n})">${n}</button>`).join("")}
+<div class="card"><h2>Modo de jogo</h2><div class="modes">${Object.entries(MODES).filter(([k])=>ref||k!=="stop").map(([k,v])=>`<div class="mode ${m===k?"on":""}" ${host?`onclick="setM('${k}')"`:""}><div style="font-size:28px">${v[0]}</div>${v[1]}</div>`).join("")}</div>
+${ref?"":'<p class="mu">O Stop Bíblico aparece só nas salas online.</p>'}${host?`<p class="mu">${m==="stop"?"Rodadas":"Perguntas"}:</p>${[10,20,30,50].map(n=>`<button class="btn sm ${+R.n===n?"":"s"}" onclick="setN(${n})">${n}</button>`).join("")}
 <button class="btn" ${ps.length?"":"disabled"} onclick="start()">Iniciar jogo</button>`:'<p class="mu">Aguardando o anfitrião iniciar…</p>'}</div>`}
 function qv(){const i=+R.i,id=QID(),A=AN(),ps=players(),P=pend(),tot=R.qs.split(",").length;
  const hd=`<p class="mu" style="text-align:center">${MODES[R.mode][1]} · ${i+1}/${tot}${R.mode==="stop"?"":" · nível "+["","fácil","médio","difícil","expert"][({quiz:MC,tf:TF,who:WHO}[R.mode][id]||[])[4]||1]}</p>`;
+ if(R.mode==="stop"){const lk=R.g+"_"+i;if(ui.spun!==lk){ui.spun=lk;spin(LT())}
+  if(ui.spin)return hd+`<div class="card" style="text-align:center"><h2>Sorteando a letra…</h2><div class="big sl" id="sl">${ui.sl}</div></div>`}
  if(R.mode==="stop"&&R.stp&&R.stp[i]&&P.length){const f=document.querySelector(".sf"),o={};P.forEach((p,x)=>o[`ans/${i}/${p.id}`]={v:(x===0&&f&&ui.ready?vals():["","","","","",""]).join("|")});patch(o);return null}
  const wait=`<div class="card" style="text-align:center">Aguardando os outros… (${ps.filter(p=>A[p.id]).length}/${ps.length} responderam)</div>${host?'<button class="btn s" onclick="revealNow()">Revelar agora</button>':""}`;
  if(!P.length)return hd+wait;
@@ -211,9 +222,9 @@ function qv(){const i=+R.i,id=QID(),A=AN(),ps=players(),P=pend(),tot=R.qs.split(
  if(R.mode==="quiz")return hd+`<div class="card">${who}<div class="q">${esc(MC[id][0])}</div>${O(MC[id][1])}<p class="mu">Responder rápido dá bônus de pontos.</p></div>`;
  if(R.mode==="tf")return hd+`<div class="card">${who}<div class="q">${esc(TF[id][0])}</div>${O(["Verdadeiro","Falso"])}</div>`;
  if(R.mode==="who")return hd+`<div class="card">${who}${WHO[id][0].slice(0,ui.h+1).map(h=>`<div class="hint">💡 ${esc(h)}</div>`).join("")}${ui.h<3?'<button class="btn s sm" onclick="more()">Mais uma dica (vale menos pontos)</button>':""}<div class="q">Quem sou eu?</div>${O(WHO[id][1])}<p class="mu">Valem 100, 70, 40 ou 20 pontos conforme as dicas usadas.</p></div>`;
- return hd+`<div class="card sf">${who}<div class="big">${id}</div><p class="mu" style="text-align:center">Escreva uma resposta para cada categoria começando com esta letra. Respostas iguais valem 5, únicas valem 10.</p>${CATS.map((c,k)=>`<label class="mu">${c}</label><input id="c${k}" autocomplete="off">`).join("")}<button class="btn" onclick="submitStop()">✋ STOP! Enviar</button></div>${host?'<button class="btn s" onclick="revealNow()">Encerrar rodada</button>':""}`}
-function rev(){const i=+R.i,id=QID(),R2=(R.res&&R.res[i])||{},A=AN(),ps=players();let body;
- if(R.mode==="stop"){const sc=scoreStop(i);body=`<div class="card"><div class="big">${id}</div>${ps.map(p=>`<div style="margin:8px 0"><b>${esc(p.n)}</b> <span style="float:right" class="g">+${R2[p.id]||0}</span>${CATS.map((c,k)=>{const v=gv(A[p.id],k),pt=sc[p.id][k];return `<div class="mu">${c}: <span class="${pt?"g":"r"}">${esc(v)||"—"}</span> ${pt?`(+${pt})`:""}</div>`}).join("")}</div>`).join("")}</div>`}
+ return hd+`<div class="card sf">${who}<div class="big">${LT()}</div><p class="mu" style="text-align:center">Escreva uma resposta para cada categoria começando com esta letra. Respostas iguais valem 5, únicas valem 10.</p>${CATS.map((c,k)=>`<label class="mu">${c}</label><input id="c${k}" autocomplete="off">`).join("")}<button class="btn" onclick="submitStop()">✋ STOP! Enviar</button></div>${host?'<button class="btn s" onclick="revealNow()">Encerrar rodada</button>':""}`}
+function rev(){const i=+R.i,id=QID(),A=AN(),ps=players(),SS=R.mode==="stop"?scoreStop(i):null,R2={};let body;ps.forEach(p=>R2[p.id]=SS?SS[p.id].reduce((a,b)=>a+b,0):ptsQ(i,p.id));
+ if(R.mode==="stop"){const sc=SS;body=`<div class="card"><div class="big">${LT()}</div>${ps.map(p=>`<div style="margin:8px 0"><b>${esc(p.n)}</b> <span style="float:right" class="g">+${R2[p.id]||0}</span>${CATS.map((c,k)=>{const v=gv(A[p.id],k),pt=sc[p.id][k];return `<div class="mu">${c}: <span class="${pt?"g":"r"}">${esc(v)||"—"}</span> ${pt?`(+${pt})`:""}</div>`}).join("")}</div>`).join("")}</div>`}
  else{const c=corr(id),opts=R.mode==="quiz"?MC[id][1]:R.mode==="tf"?["Verdadeiro","Falso"]:WHO[id][1],q=R.mode==="quiz"?MC[id][0]:R.mode==="tf"?TF[id][0]:"Quem sou eu?",rf=R.mode==="quiz"?MC[id][3]:R.mode==="tf"?TF[id][2]:WHO[id][3];
   body=`<div class="card"><div class="q">${esc(q)}</div><div class="opt ok">✔ ${esc(opts[c])}</div><p class="mu">📖 ${esc(rf)}</p>${ps.map(p=>{const a=A[p.id];return `<div class="row"><span>${esc(p.n)} ${a?(a.c===c?"✔":"✘"):"—"}</span><b class="${R2[p.id]?"g":""}">+${R2[p.id]||0}</b></div>`}).join("")}</div>`}
  const last=i+1>=R.qs.split(",").length;
