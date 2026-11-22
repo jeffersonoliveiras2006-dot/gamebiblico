@@ -132,14 +132,18 @@ const mine=()=>players().filter(p=>p.d===dev);
 const AN=()=>(R.ans&&R.ans[R.i])||{};
 const QID=()=>+(R.qs||"").split(",")[R.i];
 function patch(o){if(ref)ref.update(o);else{for(const k in o){const ks=k.split("/");let t=R;for(let i=0;i<ks.length-1;i++)t=t[ks[i]]??(t[ks[i]]={});if(o[k]===null)delete t[ks.at(-1)];else t[ks.at(-1)]=o[k]}render()}}
-function listen(code){ref=db.ref("jwgame/rooms/"+code);localStorage.jwcode=code;V="room";
+function listen(code){ref=db.ref("jwgame/rooms/"+code);localStorage.jwcode=code;V="room";history.pushState({r:1},"");
  ref.on("value",s=>{if(!s.exists()){leave();return}R=s.val();host=R.host===dev;render()})}
-function startLocal(){ref=null;V="room";host=true;R={host:dev,phase:"lobby",mode:"quiz",n:10,players:{}};render()}
+function startLocal(){ref=null;V="room";history.pushState({r:1},"");host=true;R={host:dev,phase:"lobby",mode:"quiz",n:10,players:{}};render()}
 function createRoom(){const c=Array.from({length:4},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.random()*24|0]).join("");
  db.ref("jwgame/rooms/"+c).set({host:dev,phase:"lobby",mode:"quiz",n:10,t:Date.now()}).then(()=>listen(c)).catch(e=>alert("Erro no Firebase (verifique as regras do Realtime Database): "+e.message))}
 function joinRoom(){const c=($("#jc").value||"").toUpperCase().trim();if(c.length<4)return;
  db.ref("jwgame/rooms/"+c).get().then(s=>s.exists()?listen(c):alert("Sala não encontrada.")).catch(e=>alert("Erro: "+e.message))}
-function leave(){if(ref)ref.off();ref=null;delete localStorage.jwcode;V="home";R={};ui={};render()}
+function leave(){if(ref)ref.off();ref=null;delete localStorage.jwcode;V="home";R={};ui={};render();if(history.state&&history.state.r)history.back()}
+const goBack=()=>{if(R.phase==="end"||confirm("Sair do jogo?"))leave()};
+history.replaceState({r:0},"");
+addEventListener("popstate",()=>{if(V!=="room")return;
+ if(R.phase==="end"||confirm("Sair do jogo?")){if(ref)ref.off();ref=null;delete localStorage.jwcode;V="home";R={};ui={};render()}else history.pushState({r:1},"")});
 function addP(){const n=($("#pn").value||"").trim().slice(0,20);if(!n)return;
  if(players().length>=25)return alert("Máximo de 25 jogadores.");
  if(players().some(p=>p.n.toLowerCase()===n.toLowerCase()))return alert("Esse nome já está na sala.");
@@ -185,7 +189,7 @@ function home(){return `<h1>Jogo Bíblico</h1><p class="mu" style="text-align:ce
 ${db?"":'<p class="mu">Firebase indisponível: só o modo neste celular funciona.</p>'}</div>
 ${inst?'<button class="btn s" onclick="installApp()">📲 Instalar aplicativo</button>':""}`}
 function rank(){const ps=players().sort((a,b)=>(b.s||0)-(a.s||0));return ps.map((p,k)=>`<div class="row"><span>${["🥇","🥈","🥉"][k]||k+1+"."} ${esc(p.n)}</span><b>${p.s||0}</b></div>`).join("")}
-function room(){const hd=`<div class="top"><span>${ref?"Sala "+localStorage.jwcode:"Neste celular"}</span><button class="btn s sm" onclick="if(confirm('Sair do jogo?'))leave()">Sair</button></div>`;
+function room(){const hd=`<div class="top"><span>${ref?"Sala "+localStorage.jwcode:"Neste celular"}</span><button class="btn s sm" onclick="goBack()">← Voltar</button></div>`;
  if(!R.phase)return hd+'<p class="mu">Conectando…</p>';
  return hd+({lobby,q:qv,rev,end})[R.phase]()}
 function lobby(){const ps=players(),m=R.mode;
