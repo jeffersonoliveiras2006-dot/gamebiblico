@@ -1,0 +1,2 @@
+// Credenciais do Firebase (separadas do jogo). Usa o Realtime Database no caminho "jwgame/rooms".
+window.JW_FIREBASE_CONFIG={apiKey:"AIzaSyDD9q0F6J58CYcmohwxL9cUPstXLYqLx9c",authDomain:"velha-5cbdf.firebaseapp.com",projectId:"velha-5cbdf",storageBucket:"velha-5cbdf.firebasestorage.app",messagingSenderId:"737198891994",appId:"1:737198891994:web:235d794f63c147cd0716e3",databaseURL:"https://velha-5cbdf-default-rtdb.firebaseio.com/"};

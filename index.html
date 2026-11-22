@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jogo Bíblico</title>
+<meta name="theme-color" content="#0f1420">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0f1420;--c1:#182036;--c2:#222d4a;--tx:#eef1f8;--mu:#97a2bd;--gd:#e8b84a;--ok:#3ecf8e;--no:#ef6b6b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#app{max-width:560px;margin:auto;padding:14px}
+h1{font-size:26px;margin:8px 0;color:var(--gd);text-align:center}h2{font-size:18px;margin:0 0 8px}
+.card{background:var(--c1);border-radius:14px;padding:14px;margin:10px 0}
+.btn,.opt{display:block;width:100%;border:0;border-radius:12px;padding:14px;font:600 16px system-ui;margin:8px 0;background:var(--gd);color:#1b1500;cursor:pointer}
+.opt{background:var(--c2);color:var(--tx);text-align:left}.btn.s{background:var(--c2);color:var(--tx)}.btn.sm{display:inline-block;width:auto;padding:8px 12px;margin:2px;font-size:14px}
+.btn:disabled{opacity:.4}.opt.ok{background:var(--ok);color:#06231a}.opt.no{background:var(--no);color:#2a0808}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--c2);background:var(--bg);color:var(--tx);font:16px system-ui;margin:4px 0}
+.top{display:flex;justify-content:space-between;align-items:center;color:var(--mu);font-size:14px}
+.code{font:800 34px monospace;letter-spacing:8px;color:var(--gd);text-align:center}
+.mu{color:var(--mu);font-size:13px}.row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--c2)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode{background:var(--c2);border-radius:12px;padding:10px;text-align:center;cursor:pointer;border:2px solid transparent}.mode.on{border-color:var(--gd)}
+.q{font-size:20px;font-weight:600;margin:8px 0}.hint{background:var(--c2);border-radius:10px;padding:8px 12px;margin:6px 0}
+.big{font:800 80px system-ui;color:var(--gd);text-align:center}.g{color:var(--ok)}.r{color:var(--no)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="perguntas.js"></script>
+<script>
+/* ===== BANCO DE CONTEÚDO (Tradução do Novo Mundo / jw.org) ===== */
+const MC=[
+["Qual é o nome pessoal de Deus na Bíblia?",["Jeová","Miguel","Emanuel","Messias"],0,"Salmo 83:18"],
+["Quantos livros tem a Bíblia?",["39","66","73","27"],1,"39 Escrituras Hebraicas + 27 Escrituras Gregas Cristãs"],
+["Quem construiu a arca?",["Abraão","Moisés","Noé","Davi"],2,"Gênesis 6:13-22"],
+["Quantas pragas Jeová trouxe sobre o Egito?",["7","10","12","40"],1,"Êxodo 7–12"],
+["Quem derrotou o gigante Golias?",["Davi","Saul","Sansão","Josué"],0,"1 Samuel 17:50"],
+["Quem foi engolido por um grande peixe?",["Elias","Jonas","Pedro","Daniel"],1,"Jonas 1:17"],
+["Qual é o primeiro livro da Bíblia?",["Êxodo","Salmos","Gênesis","Mateus"],2,"Gênesis 1:1"],
+["Quem pediu sabedoria a Jeová para governar?",["Salomão","Davi","Saul","Ezequias"],0,"1 Reis 3:9-12"],
+["Quem foi lançado na cova dos leões por orar a Jeová?",["Jeremias","Daniel","Jó","Elias"],1,"Daniel 6:16-22"],
+["Quantos apóstolos Jesus escolheu?",["7","10","12","70"],2,"Lucas 6:13"],
+["Em que cidade Jesus nasceu?",["Nazaré","Jerusalém","Belém","Cafarnaum"],2,"Mateus 2:1"],
+["Qual era o nome anterior do apóstolo Paulo?",["Saulo","Simão","Silas","Saul de Cesareia"],0,"Atos 13:9"],
+["Qual destas NÃO é um fruto do espírito?",["Amor","Alegria","Orgulho","Paz"],2,"Gálatas 5:22, 23"],
+["Quanto tempo choveu no Dilúvio?",["7 dias","40 dias e 40 noites","3 meses","1 ano"],1,"Gênesis 7:12"],
+["Quem negou Jesus três vezes?",["Judas","Tomé","Pedro","João"],2,"Mateus 26:69-75"],
+["Qual rainha arriscou a vida para salvar seu povo?",["Ester","Rute","Débora","Jezabel"],0,"Ester 4:16"],
+["Qual é o último livro da Bíblia?",["Judas","Atos","Revelação","Hebreus"],2,"Revelação 22:21"],
+["Onde Jesus predisse que a boa notícia do Reino seria pregada em toda a terra habitada?",["Mateus 24:14","João 3:16","Salmo 23:1","Gênesis 1:1"],0,"Mateus 24:14"],
+["Segundo a Bíblia, o que acontece com os mortos?",["Não sabem de nada","Vão para o purgatório","Reencarnam","Sofrem num inferno de fogo"],0,"Eclesiastes 9:5, 10"],
+["Qual é o primeiro pedido da oração-modelo?",["Seja santificado o teu nome","Venha o teu Reino","Dá-nos o pão","Perdoa as nossas dívidas"],0,"Mateus 6:9"],
+["Segundo Salmo 37:29, quem herdará a terra?",["Os poderosos","Os justos","Os ricos","Os sábios do mundo"],1,"Salmo 37:29"],
+["Qual é o local da guerra do grande dia de Deus, o Todo-Poderoso?",["Babel","Armagedom","Jericó","Sodoma"],1,"Revelação 16:14, 16"],
+["Quem viveu 969 anos, o mais longevo registrado?",["Adão","Noé","Metusalém","Enoque"],2,"Gênesis 5:27"],
+["Quem lutou com um anjo e recebeu o nome Israel?",["Isaque","Jacó","Esaú","José"],1,"Gênesis 32:24-28"],
+["Quem foi vendido pelos irmãos e depois governou no Egito?",["Benjamim","Judá","José","Rúben"],2,"Gênesis 37:28; 41:41"],
+["Quem levou Israel à Terra Prometida depois de Moisés?",["Calebe","Josué","Arão","Gideão"],1,"Josué 1:1, 2"],
+["Qual profeta foi levado num redemoinho?",["Elias","Eliseu","Isaías","Samuel"],0,"2 Reis 2:11"],
+["Qual foi o primeiro milagre de Jesus?",["Curar um cego","Água em vinho","Multiplicar pães","Andar sobre a água"],1,"João 2:1-11"],
+["Qual juiz tinha força extraordinária dada por Jeová?",["Gideão","Sansão","Baraque","Otniel"],1,"Juízes 16"],
+["Quem foi o primeiro gentio incircunciso a se tornar cristão?",["Cornélio","Timóteo","Tito","Lídia"],0,"Atos 10"],
+["Onde os discípulos foram chamados cristãos pela primeira vez?",["Antioquia","Roma","Éfeso","Corinto"],0,"Atos 11:26"],
+["Qual era o nome do jardim onde Deus colocou Adão e Eva?",["Getsêmani","Éden","Carmelo","Sião"],1,"Gênesis 2:8"],
+["Quem foi o filho prometido a Abraão e Sara?",["Ismael","Isaque","Jacó","Esaú"],1,"Gênesis 21:1-3"],
+["Qual moabita disse a Noemi: 'O teu povo será o meu povo'?",["Orpa","Rute","Raabe","Miriã"],1,"Rute 1:16"],
+["Quem foi o primeiro homem assassinado?",["Abel","Sete","Enoque","Lameque"],0,"Gênesis 4:8"],
+["Quem foi o profeta que ungiu Davi como rei?",["Natã","Samuel","Elias","Gade"],1,"1 Samuel 16:13"],
+["Qual livro tem mais capítulos?",["Isaías","Salmos","Gênesis","Jeremias"],1,"Salmos tem 150 capítulos"],
+["Quem escreveu o livro de Atos?",["Lucas","Paulo","Pedro","Marcos"],0,"Atos 1:1"]
+];
+const TF=[
+["Jeová é o Altíssimo sobre toda a terra.",1,"Salmo 83:18"],
+["Jesus é o primogênito de toda a criação.",1,"Colossenses 1:15"],
+["A Bíblia ensina que a alma humana é imortal.",0,"Ezequiel 18:4: a alma que pecar morrerá"],
+["Deus prometeu que a terra durará para sempre.",1,"Salmo 104:5"],
+["Jesus disse que só o Pai sabe o dia e a hora do fim.",1,"Mateus 24:36"],
+["Os mortos estão sofrendo em um inferno de fogo.",0,"Eclesiastes 9:5, 10"],
+["Jonas ficou três dias e três noites dentro do peixe.",1,"Jonas 1:17"],
+["Noé tinha cinco filhos.",0,"Eram três: Sem, Cam e Jafé. Gênesis 6:10"],
+["A Bíblia diz que Deus é amor.",1,"1 João 4:8"],
+["A Bíblia promete um Paraíso na terra.",1,"Lucas 23:43; Revelação 21:3, 4"],
+["Jesus escolheu 14 apóstolos.",0,"Eram 12. Lucas 6:13"],
+["A Bíblia aprova o uso de imagens na adoração.",0,"Êxodo 20:4, 5"],
+["Lucas escreveu o livro de Atos.",1,"Atos 1:1"],
+["Salomão construiu o templo de Jeová em Jerusalém.",1,"1 Reis 6:1"],
+["Jesus nasceu em Nazaré.",0,"Nasceu em Belém. Mateus 2:1"]
+];
+const WHO=[
+[["Fui salvo das águas do Nilo ainda bebê.","Cresci na casa do faraó.","Jeová falou comigo numa sarça ardente.","Conduzi Israel para fora do Egito."],["Moisés","Arão","Josué","Calebe"],0,"Êxodo 2–14"],
+[["Fui pastor de ovelhas.","Samuel me ungiu rei.","Toquei harpa para o rei Saul.","Derrotei um gigante com uma funda."],["Saul","Davi","Jônatas","Salomão"],1,"1 Samuel 16, 17"],
+[["Sou judia e fui criada por meu primo.","Tornei-me rainha da Pérsia.","Jejuei antes de me apresentar ao rei sem ser chamada.","Salvei meu povo do plano de Hamã."],["Rute","Débora","Ester","Miriã"],2,"Livro de Ester"],
+[["Antes eu perseguia os discípulos de Cristo.","Vi uma luz forte a caminho de Damasco.","Fiz viagens missionárias.","Escrevi cartas a várias congregações."],["Barnabé","Paulo","Timóteo","Silas"],1,"Atos 9"],
+[["Vivi na terra de Uz.","Perdi meus bens e meus filhos.","Três companheiros me acusaram falsamente.","Jeová me recompensou pela minha lealdade."],["Jó","Elifaz","Jeremias","Abraão"],0,"Jó 1, 42"],
+[["Fui levado cativo para Babilônia.","Recusei a comida do rei.","Interpretei sonhos de Nabucodonosor.","Sobrevivi numa cova de leões."],["Ezequiel","Misael","Daniel","Esdras"],2,"Daniel 1–6"],
+[["Eu era pescador.","Andei sobre a água por um momento.","Neguei meu Mestre três vezes.","Fui chamado também de Cefas."],["André","Pedro","Tiago","João"],1,"Mateus 14; 26"],
+[["Preguei a justiça num mundo violento.","Construí uma grande arca.","Sobrevivi ao Dilúvio com minha família.","Vi o arco-íris como sinal de promessa."],["Enoque","Metusalém","Noé","Lameque"],2,"Gênesis 6–9"]
+];
+const CATS=["Livro da Bíblia","Personagem bíblico","Lugar ou cidade","Animal","Alimento ou objeto","Qualidade cristã"];
+const LET="ABCDEFGHIJLMNOPRST";
+const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/^\d+\s*/,"");
+const BK=new Set("Gênesis,Êxodo,Levítico,Números,Deuteronômio,Josué,Juízes,Rute,Samuel,Reis,Crônicas,Esdras,Neemias,Ester,Jó,Salmos,Salmo,Provérbios,Eclesiastes,Cântico de Salomão,Isaías,Jeremias,Lamentações,Ezequiel,Daniel,Oseias,Joel,Amós,Obadias,Jonas,Miqueias,Naum,Habacuque,Sofonias,Ageu,Zacarias,Malaquias,Mateus,Marcos,Lucas,João,Atos,Romanos,Coríntios,Gálatas,Efésios,Filipenses,Colossenses,Tessalonicenses,Timóteo,Tito,Filêmon,Hebreus,Tiago,Pedro,Judas,Revelação".split(",").map(norm));
+const MODES={quiz:["📖","Quiz Bíblico"],tf:["✅","Verdadeiro ou Falso"],who:["🕵️","Quem Sou Eu?"],stop:["✋","Stop Bíblico"]};
+
+/* ===== ESTADO E SALA ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const shuf=a=>{a=[...a];for(let i=a.length;i>1;){const j=Math.random()*i--|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const dev=localStorage.jwdev||(localStorage.jwdev=Math.random().toString(36).slice(2,9));
+/* mescla o banco extra e define o nível (1 fácil a 4 difícil) de cada item */
+(()=>{const E=window.EXTRA||{},L=t=>(t||"").trim().split("\n").map(l=>l.split("|"));
+MC.forEach((x,i)=>x[4]=i<20?1:2);TF.forEach((x,i)=>x[4]=i<8?1:2);WHO.forEach((x,i)=>x[4]=i<4?1:2);
+L(E.mc).forEach(a=>{if(a.length<7)return;const o=shuf([a[2],a[3],a[4],a[5]]);MC.push([a[1],o,o.indexOf(a[2]),a[6],+a[0]])});
+L(E.tf).forEach(a=>{if(a.length<4)return;TF.push([a[1],a[2]=="V"?1:0,a[3],0,+a[0]])});
+L(E.who).forEach(a=>{if(a.length<10)return;const o=shuf([a[5],a[6],a[7],a[8]]);WHO.push([[a[1],a[2],a[3],a[4]],o,o.indexOf(a[5]),a[9],+a[0]])})})();
+/* escolhe n itens crescendo em dificuldade: um sorteado de cada faixa do banco ordenado por nível */
+function pick(B,n){n=Math.min(n,B.length);const s=shuf(B.map((_,i)=>i)).sort((a,b)=>B[a][4]-B[b][4]),q=[];
+ for(let k=0;k<n;k++){const a=Math.floor(k*s.length/n),b=Math.max(a+1,Math.floor((k+1)*s.length/n));q.push(s[a+(Math.random()*(b-a)|0)])}return q}
+let db=null,ref=null,V="home",R={},host=false,ui={},inst=null;
+try{if(window.firebase&&window.JW_FIREBASE_CONFIG){firebase.initializeApp(window.JW_FIREBASE_CONFIG);db=firebase.database()}}catch(e){console.warn(e)}
+const players=()=>Object.entries(R.players||{}).map(([id,p])=>({id,...p})).sort((a,b)=>a.o-b.o);
+const mine=()=>players().filter(p=>p.d===dev);
+const AN=()=>(R.ans&&R.ans[R.i])||{};
+const QID=()=>+(R.qs||"").split(",")[R.i];
+function patch(o){if(ref)ref.update(o);else{for(const k in o){const ks=k.split("/");let t=R;for(let i=0;i<ks.length-1;i++)t=t[ks[i]]??(t[ks[i]]={});if(o[k]===null)delete t[ks.at(-1)];else t[ks.at(-1)]=o[k]}render()}}
+function listen(code){ref=db.ref("jwgame/rooms/"+code);localStorage.jwcode=code;V="room";
+ ref.on("value",s=>{if(!s.exists()){leave();return}R=s.val();host=R.host===dev;render()})}
+function startLocal(){ref=null;V="room";host=true;R={host:dev,phase:"lobby",mode:"quiz",n:10,players:{}};render()}
+function createRoom(){const c=Array.from({length:4},()=>"ABCDEFGHJKLMNPQRSTUVWXYZ"[Math.random()*24|0]).join("");
+ db.ref("jwgame/rooms/"+c).set({host:dev,phase:"lobby",mode:"quiz",n:10,t:Date.now()}).then(()=>listen(c)).catch(e=>alert("Erro no Firebase (verifique as regras do Realtime Database): "+e.message))}
+function joinRoom(){const c=($("#jc").value||"").toUpperCase().trim();if(c.length<4)return;
+ db.ref("jwgame/rooms/"+c).get().then(s=>s.exists()?listen(c):alert("Sala não encontrada.")).catch(e=>alert("Erro: "+e.message))}
+function leave(){if(ref)ref.off();ref=null;delete localStorage.jwcode;V="home";R={};ui={};render()}
+function addP(){const n=($("#pn").value||"").trim().slice(0,20);if(!n)return;
+ if(players().length>=25)return alert("Máximo de 25 jogadores.");
+ if(players().some(p=>p.n.toLowerCase()===n.toLowerCase()))return alert("Esse nome já está na sala.");
+ const id="p"+Date.now().toString(36)+(Math.random()*99|0);patch({["players/"+id]:{n,s:0,d:dev,o:Date.now()}});$("#pn").value="";$("#pn").focus()}
+const rmP=id=>patch({["players/"+id]:null});
+const setM=m=>patch({mode:m}),setN=n=>patch({n});
+function start(){const m=R.mode,n=+R.n||10;let q;
+ if(m==="stop")q=shuf([...LET]).slice(0,Math.min(n,18));
+ else q=pick({quiz:MC,tf:TF,who:WHO}[m],n);
+ const o={phase:"q",i:0,g:Date.now(),qs:q.join(","),ans:null,res:null,stp:null};players().forEach(p=>o["players/"+p.id+"/s"]=0);ui={};patch(o)}
+const corr=id=>R.mode==="quiz"?MC[id][2]:R.mode==="tf"?(TF[id][1]?0:1):WHO[id][2];
+
+/* ===== RESPOSTAS E PONTUAÇÃO ===== */
+function pend(){return mine().filter(p=>!AN()[p.id])}
+function ans(k){const p=pend()[0];patch({[`ans/${R.i}/${p.id}`]:{c:k,ms:Date.now()-ui.t0,h:ui.h||0}})}
+const more=()=>{ui.h++;render()};
+const ready=()=>{ui.ready=1;ui.t0=Date.now();render()};
+function vals(){return [...Array(6)].map((_,k)=>(($("#c"+k)||{}).value||"").replace(/\|/g,""))}
+function submitStop(){const p=pend()[0],i=R.i,o={};o[`ans/${i}/${p.id}`]={v:vals().join("|")};if(mine().length<2&&!(R.stp&&R.stp[i]))o["stp/"+i]=p.id;patch(o)}
+function reveal(){const i=+R.i,c=corr(QID()),A=AN(),o={phase:"rev"};
+ players().forEach(p=>{const a=A[p.id];let pt=0;if(a&&a.c===c)pt=R.mode==="who"?[100,70,40,20][Math.min(a.h||0,3)]:100+Math.max(0,Math.round(50*(1-a.ms/20000)));o[`res/${i}/${p.id}`]=pt;o["players/"+p.id+"/s"]=(p.s||0)+pt});patch(o)}
+const gv=(a,k)=>a&&a.v?(a.v.split("|")[k]||""):"";
+function scoreStop(i){const L=norm(R.qs.split(",")[i]),A=(R.ans&&R.ans[i])||{},ps=players(),cnt=CATS.map(()=>({}));
+ const ok=(v,k)=>{v=norm(v);return v.length>1&&v[0]===L&&(k||BK.has(v))};
+ ps.forEach(p=>CATS.forEach((_,k)=>{const v=gv(A[p.id],k);if(ok(v,k)){const n=norm(v);cnt[k][n]=(cnt[k][n]||0)+1}}));
+ const out={};ps.forEach(p=>out[p.id]=CATS.map((_,k)=>{const v=gv(A[p.id],k);return ok(v,k)?(cnt[k][norm(v)]>1?5:10):0}));return out}
+function revealStop(){const i=+R.i,sc=scoreStop(i),o={phase:"rev"};
+ players().forEach(p=>{const t=sc[p.id].reduce((a,b)=>a+b,0);o[`res/${i}/${p.id}`]=t;o["players/"+p.id+"/s"]=(p.s||0)+t});patch(o)}
+const revealNow=()=>R.mode==="stop"?revealStop():reveal();
+function next(){const n=(R.qs||"").split(",").length;R.i+1>=n?patch({phase:"end"}):patch({i:R.i+1,phase:"q"})}
+const again=()=>{ui={};patch({phase:"lobby",ans:null,res:null,stp:null})};
+function auto(){if(!host||R.phase!=="q")return;const i=+R.i,A=AN(),ps=players(),k=R.g+"_"+i;
+ if(ps.length&&ps.every(p=>A[p.id])){if(ui.rv!==k){ui.rv=k;revealNow()}}
+ else if(R.mode==="stop"&&R.stp&&R.stp[i]&&ui.sto!==k){ui.sto=k;setTimeout(()=>{if(R.phase==="q"&&+R.i===i)revealStop()},3500)}}
+
+/* ===== TELAS ===== */
+const foot='<p class="mu" style="text-align:center;margin:24px 0">Conteúdo baseado na Tradução do Novo Mundo da Bíblia Sagrada e em publicações de jw.org. Confira sempre os textos na sua Bíblia.</p>';
+function home(){return `<h1>Jogo Bíblico</h1><p class="mu" style="text-align:center">De 1 a 25 jogadores · Tradução do Novo Mundo</p>
+<div class="card"><h2>Jogar neste celular</h2><p class="mu">Todos usam o mesmo aparelho, passando o celular.</p><button class="btn" onclick="startLocal()">Começar</button></div>
+<div class="card"><h2>Sala com vários celulares</h2><p class="mu">Todos os celulares veem a mesma tela. Cada celular pode ter um ou mais jogadores.</p>
+<button class="btn s" onclick="createRoom()" ${db?"":"disabled"}>Criar sala</button>
+<input id="jc" placeholder="Código da sala" maxlength="4" style="text-transform:uppercase;text-align:center"><button class="btn s" onclick="joinRoom()" ${db?"":"disabled"}>Entrar na sala</button>
+${db?"":'<p class="mu">Firebase indisponível: só o modo neste celular funciona.</p>'}</div>
+${inst?'<button class="btn s" onclick="installApp()">📲 Instalar aplicativo</button>':""}`}
+function rank(){const ps=players().sort((a,b)=>(b.s||0)-(a.s||0));return ps.map((p,k)=>`<div class="row"><span>${["🥇","🥈","🥉"][k]||k+1+"."} ${esc(p.n)}</span><b>${p.s||0}</b></div>`).join("")}
+function room(){const hd=`<div class="top"><span>${ref?"Sala "+localStorage.jwcode:"Neste celular"}</span><button class="btn s sm" onclick="if(confirm('Sair do jogo?'))leave()">Sair</button></div>`;
+ if(!R.phase)return hd+'<p class="mu">Conectando…</p>';
+ return hd+({lobby,q:qv,rev,end})[R.phase]()}
+function lobby(){const ps=players(),m=R.mode;
+ return `${ref?`<div class="card"><div class="mu" style="text-align:center">Código da sala (outros celulares: Entrar na sala)</div><div class="code">${localStorage.jwcode}</div></div>`:""}
+<div class="card"><h2>Jogadores (${ps.length}/25)</h2>${ps.map(p=>`<div class="row"><span>${esc(p.n)}${p.d===dev?" 📱":""}</span>${p.d===dev?`<a onclick="rmP('${p.id}')" style="color:var(--no)">remover</a>`:""}</div>`).join("")||'<p class="mu">Ninguém ainda.</p>'}
+<input id="pn" placeholder="Nome do jogador" maxlength="20" onkeydown="if(event.key=='Enter')addP()"><button class="btn s" onclick="addP()">+ Adicionar jogador neste celular</button></div>
+<div class="card"><h2>Modo de jogo</h2><div class="modes">${Object.entries(MODES).map(([k,v])=>`<div class="mode ${m===k?"on":""}" ${host?`onclick="setM('${k}')"`:""}><div style="font-size:28px">${v[0]}</div>${v[1]}</div>`).join("")}</div>
+${host?`<p class="mu">${m==="stop"?"Rodadas":"Perguntas"}:</p>${[10,20,30,50].map(n=>`<button class="btn sm ${+R.n===n?"":"s"}" onclick="setN(${n})">${n}</button>`).join("")}
+<button class="btn" ${ps.length?"":"disabled"} onclick="start()">Iniciar jogo</button>`:'<p class="mu">Aguardando o anfitrião iniciar…</p>'}</div>`}
+function qv(){const i=+R.i,id=QID(),A=AN(),ps=players(),P=pend(),tot=R.qs.split(",").length;
+ const hd=`<p class="mu" style="text-align:center">${MODES[R.mode][1]} · ${i+1}/${tot}${R.mode==="stop"?"":" · nível "+["","fácil","médio","difícil","expert"][({quiz:MC,tf:TF,who:WHO}[R.mode][id]||[])[4]||1]}</p>`;
+ if(R.mode==="stop"&&R.stp&&R.stp[i]&&P.length){const f=document.querySelector(".sf"),o={};P.forEach((p,x)=>o[`ans/${i}/${p.id}`]={v:(x===0&&f&&ui.ready?vals():["","","","","",""]).join("|")});patch(o);return null}
+ const wait=`<div class="card" style="text-align:center">Aguardando os outros… (${ps.filter(p=>A[p.id]).length}/${ps.length} responderam)</div>${host?'<button class="btn s" onclick="revealNow()">Revelar agora</button>':""}`;
+ if(!P.length)return hd+wait;
+ const p=P[0],key=R.g+"_"+i+p.id;if(ui.key!==key){ui.key=key;ui.t0=Date.now();ui.h=0;ui.ready=mine().length<2}
+ const who=`<p>Vez de: <b style="color:var(--gd)">${esc(p.n)}</b></p>`;
+ if(!ui.ready)return hd+`<div class="card" style="text-align:center"><h2>Passe o celular para</h2><div class="code" style="letter-spacing:0">${esc(p.n)}</div><button class="btn" onclick="ready()">Estou pronto</button></div>`;
+ const O=(a)=>a.map((x,k)=>`<button class="opt" onclick="ans(${k})">${esc(x)}</button>`).join("");
+ if(R.mode==="quiz")return hd+`<div class="card">${who}<div class="q">${esc(MC[id][0])}</div>${O(MC[id][1])}<p class="mu">Responder rápido dá bônus de pontos.</p></div>`;
+ if(R.mode==="tf")return hd+`<div class="card">${who}<div class="q">${esc(TF[id][0])}</div>${O(["Verdadeiro","Falso"])}</div>`;
+ if(R.mode==="who")return hd+`<div class="card">${who}${WHO[id][0].slice(0,ui.h+1).map(h=>`<div class="hint">💡 ${esc(h)}</div>`).join("")}${ui.h<3?'<button class="btn s sm" onclick="more()">Mais uma dica (vale menos pontos)</button>':""}<div class="q">Quem sou eu?</div>${O(WHO[id][1])}<p class="mu">Valem 100, 70, 40 ou 20 pontos conforme as dicas usadas.</p></div>`;
+ return hd+`<div class="card sf">${who}<div class="big">${id}</div><p class="mu" style="text-align:center">Escreva uma resposta para cada categoria começando com esta letra. Respostas iguais valem 5, únicas valem 10.</p>${CATS.map((c,k)=>`<label class="mu">${c}</label><input id="c${k}" autocomplete="off">`).join("")}<button class="btn" onclick="submitStop()">✋ STOP! Enviar</button></div>${host?'<button class="btn s" onclick="revealNow()">Encerrar rodada</button>':""}`}
+function rev(){const i=+R.i,id=QID(),R2=(R.res&&R.res[i])||{},A=AN(),ps=players();let body;
+ if(R.mode==="stop"){const sc=scoreStop(i);body=`<div class="card"><div class="big">${id}</div>${ps.map(p=>`<div style="margin:8px 0"><b>${esc(p.n)}</b> <span style="float:right" class="g">+${R2[p.id]||0}</span>${CATS.map((c,k)=>{const v=gv(A[p.id],k),pt=sc[p.id][k];return `<div class="mu">${c}: <span class="${pt?"g":"r"}">${esc(v)||"—"}</span> ${pt?`(+${pt})`:""}</div>`}).join("")}</div>`).join("")}</div>`}
+ else{const c=corr(id),opts=R.mode==="quiz"?MC[id][1]:R.mode==="tf"?["Verdadeiro","Falso"]:WHO[id][1],q=R.mode==="quiz"?MC[id][0]:R.mode==="tf"?TF[id][0]:"Quem sou eu?",rf=R.mode==="quiz"?MC[id][3]:R.mode==="tf"?TF[id][2]:WHO[id][3];
+  body=`<div class="card"><div class="q">${esc(q)}</div><div class="opt ok">✔ ${esc(opts[c])}</div><p class="mu">📖 ${esc(rf)}</p>${ps.map(p=>{const a=A[p.id];return `<div class="row"><span>${esc(p.n)} ${a?(a.c===c?"✔":"✘"):"—"}</span><b class="${R2[p.id]?"g":""}">+${R2[p.id]||0}</b></div>`}).join("")}</div>`}
+ const last=i+1>=R.qs.split(",").length;
+ return body+`<div class="card"><h2>Placar</h2>${rank()}</div>`+(host?`<button class="btn" onclick="next()">${last?"Ver resultado final":"Próxima"}</button>`:'<p class="mu" style="text-align:center">Aguardando o anfitrião…</p>')}
+function end(){return `<h1>🏆 Resultado final</h1><div class="card">${rank()}</div>${host?'<button class="btn" onclick="again()">Jogar de novo</button>':""}<button class="btn s" onclick="leave()">Sair</button>`}
+function render(){const sv=[...document.querySelectorAll("input")].map(e=>[e.id,e.value]),fa=document.activeElement&&document.activeElement.id;
+ const h=V==="home"?home():room();if(h===null)return;$("#app").innerHTML=h+foot;
+ sv.forEach(([id,v])=>{const e=id&&document.getElementById(id);if(e&&!e.value&&v)e.value=v});
+ if(fa){const e=document.getElementById(fa);e&&e.focus()}auto()}
+
+/* ===== INSTALAÇÃO (PWA) ===== */
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();inst=e;if(V==="home")render()});
+const installApp=()=>{inst&&inst.prompt();inst=null;render()};
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+if(db&&localStorage.jwcode)db.ref("jwgame/rooms/"+localStorage.jwcode).get().then(s=>{s.exists()?listen(localStorage.jwcode):(delete localStorage.jwcode,render())}).catch(render);else render();
+</script>
+</body>
+</html>
